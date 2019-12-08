@@ -1,0 +1,61 @@
+\section{A bit of modelling}
+We have been asked to provide answers to the following questions.
+
+\subsection{Write for a generic pixel, light source and normal, Lambert’s law in its simplest form}
+The linearised Lambertian model is given by:
+\begin{equation}
+	I(p) = \rho(x)s(x) \cdot n(x)
+	\label{Laberts_law}
+\end{equation}
+and describes Lambert's cosine law \cite{slides}. This law states that the irradiance on a surface area is proportional to the cosine of the angle between the illuminating source and the surface norm. Because a Lambertian scatterer will then scatter the light according to the same law as an Lambertian emitter, the radiance on a surface will depend on the angle between the illuminating source and the surface norm, but it will not depend on the observation angle \cite{lamberts_law_wiki}.\\
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}[t]{0.45\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{Materials/Irradiance}
+		\caption{Illustration taken from \cite{quora}.}
+	\end{subfigure}%
+	~
+	\begin{subfigure}[t]{0.45\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{Materials/Radiance}
+		\caption{Illustration taken from \cite{lamberts_law_wiki}.}
+	\end{subfigure}
+	\caption{As seen in (a) does the irradiance on the surface depend greatly on the angle between the illuminating source and the surface norm, but the radiance observed at different angles remains invariant as illustrated in (b).}
+\end{figure}
+Looking back on equation \ref{Laberts_law}, $I(p)$ denotes the intensity at the pixel \textit{p}, $\rho(x)$ the albedo at location \textit{x}, $s(x)$ the irradiance \todo{Correct?} at location \textit{x} and $n(x)$ the surface norm direction at location \textit{x}.
+
+\subsection{How is Lambert’s law modified to deal with self shadows}
+A self shadow is a shadow cast on part of a object because that part is facing the opposite direction of the light source. Given the self shadowed part of the object is facing the opposite direction of the light, the surface norm will also point in the opposite direction. This means that if $s \cdot n \leq 0$ it is a self shadow. We can thus modify Lambert's cosine law to deal with self shadows by saying:
+\begin{equation*}
+	I(p) = \rho(x)max(s(x) \cdot n(x), 0)
+\end{equation*}
+
+\subsection{What about cast shadows? Comment on the difference between the two}
+Cast shadows are created by one object, but might 'hit' another object in the scene. Because Lambert's cosine law is describes what happens in a single pixel (i.e. is local) we can not handle cast shadows as they may not be a product of the object they 'hit'. On the contrary, given self shadows are produced by the same object which casts them, they are local issues.
+
+\subsection{Comment on the modelling limits of Lambert’s law}
+As discussed above, cast shadows can not be modelled by Lambert's cosine law. It is also assumed that the surface is somewhat diffuse, and that the light source is parallel \todo{Actual requirement, or assumption in course?}.
+
+\subsection{How can we obtain an estimate of albedo and normals in Woodham’s approach to Photometric Stereo. Write the equation}
+From \cite{woodham} we get the equation:
+\begin{equation*}
+	I = qNn
+\end{equation*}
+Where I denotes the image, \textit{q} the reflectance factor (albedo), \textit{N} the direction of incident illumination and \textit{n} the unit surface normal. The reflectance factor is then given by:
+\begin{equation*}
+	q = |N^{-1}I|
+\end{equation*}
+And the normals can be obtained by:
+\begin{equation*}
+	n = \left(\frac{1}{q}\right)N^{-1}I
+\end{equation*}
+
+\subsection{What should be done if one uses RANSAC. Please describe}
+RANSAC is a non-deterministic algorithm used to estimate model parameters where the data contains outliers which should not contribute to the solution. The algorithm is non-deterministic in the sense that it is only guaranteed to find a reasonable solution with a certain probability. This probability increases as the number of iterations allowed in the algorithm increases. The algorithm works by randomly sample \textit{n} data points needed to estimate model parameters, and then evaluates this model by, for instance, count how many data points are within a thresholded distance to the estimated model \cite{ransac_wiki}.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.5\linewidth]{Materials/Ransac}
+	\caption{A fitted line with RANSAC goes through the inlier data, while the outlier data is ignored. Had a least square method been used, the line would have been skewed. Illustration from \cite{ransac_wiki}.}
+\end{figure}
+If one wishes to use RANSAC to estimate the normal field and albedo from a series of images, a matrix of light sources should be constructed together with a vector of pixel intensities from each image in the series, such that if there are \textit{z} images with \textit{k} pixels, one would end up with \textit{z} vectors of dimension \textit{k}. We can now use the supplied function \textit{ransac\_3dvector} which implements the RANSAC algorithm. The returned matrix can then be used to solve for the albedo and normal surface vector in that pixel, thus the RANSAC algorithm will have to be used on every pixel in the image.
